@@ -114,7 +114,7 @@ public class TestRobotModel implements SDFDescriptionMutator {
 	}
 
 	private String getSdfFile() {
-		return TestConfigurationRoot.SIM_SDF_FILE;
+		return "models.val_description.sdf";
 	}
 
 	private InputStream getSdfFileAsStream() {
