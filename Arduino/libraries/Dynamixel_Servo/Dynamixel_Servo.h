@@ -511,4 +511,3 @@ float servo_raw_to_radians_per_sec_2 (int raw);
 #endif
 
 #endif //DYNAMIXEL_SERVO
-
