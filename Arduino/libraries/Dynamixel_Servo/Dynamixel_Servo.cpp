@@ -2,8 +2,8 @@
 #include <Arduino.h>
 
 /*--------------------------------------------------------------------------------------------*/
-#define HALF_DUPLEX_DIRECTION_OUTPUT LOW
-#define HALF_DUPLEX_DIRECTION_INPUT  HIGH
+#define HALF_DUPLEX_DIRECTION_OUTPUT HIGH
+#define HALF_DUPLEX_DIRECTION_INPUT  LOW
 HardwareSerial* servo_serial = NULL;
 int servo_half_duplex_direction_pin;
 
@@ -168,7 +168,44 @@ servo_error_t servo_set_multiple     (uint8_t ids[], servo_register_t start_reg,
   
   return servo_set_multiple_raw(ids, start_reg, raw_bytes, num_ids, bytes_per_servo);
 }
+servo_error_t servo_set_multiple_raw     (uint8_t ids[], servo_register_t start_reg, int values[], int num_ids, int num_values_per_servo)
+{  
+  int bytes_per_value[num_values_per_servo];
+  int* b = bytes_per_value;
+  int bytes_per_servo = 0;
+  int i, j, k;
+  int addr = (int)start_reg;
+  
+  uint8_t  raw_bytes[num_ids * 2]; //worst case scenario
+  uint8_t* r = raw_bytes;
+  int      raw_anything;
+  
+  for(i=0; i<num_values_per_servo; i++)
+    {
+      *b = (servo_register_is_word((servo_register_t)addr)) ? 2 : 1;
+      bytes_per_servo += *b;
+      addr += *b++;
+    }
+  
+  for(i=0; i<num_ids; i++)
+    {
+      addr = start_reg;
+      b = bytes_per_value;
+      for(j=0; j<num_values_per_servo; j++)
+        {
+          raw_anything = servo_anything_to_raw((servo_register_t)addr,  *values++);
 
+          for(k=0; k<*b; k++)
+            {
+              *r++ = (raw_anything & 0xFF);
+              raw_anything >>= 8;
+            }
+          addr += *b++;
+        }
+    }
+  
+  return servo_set_multiple_raw(ids, start_reg, raw_bytes, num_ids, bytes_per_servo);
+}
 /*--------------------------------------------------------------------------------------------*/
 servo_error_t servo_prepare          (uint8_t id, servo_register_t reg, float  val, int timeout_ms)
 {  
@@ -686,4 +723,3 @@ servo_error_t servo_get_response    (uint8_t id, uint8_t result[], int result_si
     
   return error;
 }
-
