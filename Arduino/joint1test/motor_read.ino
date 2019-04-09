@@ -17,7 +17,12 @@ servo_error_t error;
 byte turnOnSignal;
 bool loosened = false;
 
-#define ID 2
+byte receivedByte2;
+float motorCopy;
+byte sentByte2;
+
+#define ID1 2
+#define ID2 5
 
 
 void setup() {
@@ -28,8 +33,9 @@ void setup() {
   EASYCAT.Init();
   servo_init(&Serial1, 4, SERVO_DEFAULT_BAUD);
   
-  //tests if any Dynamixel works
-  //servo_set(SERVO_BROADCAST_ID, SERVO_REGISTER_GOAL_ANGLE, bytetoradian(100), timeout);
+//  tests if any Dynamixel works
+//  servo_set(SERVO_BROADCAST_ID, SERVO_REGISTER_GOAL_ANGLE, PI, timeout);
+  
 }
 
 void loop() {
@@ -67,6 +73,7 @@ byte radiantobyte( float Radian)
 }
 void Application()
 {
+  //Controlling motor 1
   turnOnSignal = EASYCAT.BufferOut.Byte[1];
   switch (turnOnSignal) {
     
@@ -75,7 +82,7 @@ void Application()
       //this allows motor to be loosened only once
       if (loosened == false) {
           loosened = true;
-          servo_loosen_motor(ID);
+          servo_loosen_motor(ID1);
       }  
     break;
     
@@ -91,16 +98,28 @@ void Application()
   //Reading from etherCAT and writing to motor
   if(!loosened) {
     receivedByte = EASYCAT.BufferOut.Byte[0];
-    error = servo_set(ID, SERVO_REGISTER_GOAL_ANGLE, bytetoradian(receivedByte), timeout);
+    error = servo_set(ID1, SERVO_REGISTER_GOAL_ANGLE, bytetoradian(receivedByte), timeout);
     //update bufferIn for next time master reads values (prevents jumps)
     EASYCAT.BufferIn.Byte[0] = receivedByte;
   }
 
   //Reading from motor and writing to etherCAT
   else {
-    error = servo_get(ID,SERVO_REGISTER_PRESENT_ANGLE,&motorPos,timeout);
+    error = servo_get(ID1,SERVO_REGISTER_PRESENT_ANGLE,&motorPos,timeout);
     sentByte = radiantobyte(motorPos);
-    EASYCAT.BufferIn.Byte[0] = sentByte;  //write to byte 0 of ethercat
+    EASYCAT.BufferIn.Byte[0] = sentByte;  //write to byte 0 of ethercat    
   }
+
+  //Controlling motor 2 with Arduino
+    receivedByte2 = EASYCAT.BufferOut.Byte[2];
+    error = servo_set(ID2, SERVO_REGISTER_GOAL_ANGLE, /*bytetoradian(receivedByte2)*/motorPos, timeout);
+    //send motorcopy position to etherCAT
+//    error = servo_get(ID1,SERVO_REGISTER_PRESENT_ANGLE,&motorCopy,timeout);
+//    sentByte = radiantobyte(motorCopy);
+//    EASYCAT.BufferIn.Byte[2] = sentByte;  //write to byte 2 of ethercat    
+
+//  //Controlling motor 2 with Arduino
+//    receivedByte3 = EASYCAT.BufferOut.Byte[2];
+//    error = servo_set(ID2, SERVO_REGISTER_GOAL_ANGLE, bytetoradian(receivedByte2), timeout);
 }
 
